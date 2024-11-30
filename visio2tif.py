@@ -147,6 +147,7 @@ class VisioConversionWorker(QtCore.QThread):
             output_path=currentPath+'\\out_fig_'+str(jTiff)+'.tif'
             vapp.Application.Settings.SetRasterExportResolution(3,dpi,dpi,0)
             vapp.Application.Settings.SetRasterExportSize(2)
+            output_path=os.path.abspath(os.path.normpath(output_path))#解决中文路径报错问题
             vpage.Export(output_path)
             progress_value=int(jTiff/pageNum*100)
             self.progress.emit(progress_value)
@@ -203,14 +204,17 @@ class WordConversionWorker(QtCore.QThread):
                     os.makedirs(currentPath+'\\outTifTemp', exist_ok=True)
                     vapp.Application.Settings.SetRasterExportResolution(3,dpi,dpi,0)
                     vapp.Application.Settings.SetRasterExportSize(2)
+                    output_path=os.path.abspath(os.path.normpath(output_path))#解决中文路径报错问题
                     activePage.Export(output_path)
                     vapp.Quit()
                     # 替换 Visio 对象为 TIF 图片
                     new_shape=shape.Range.InlineShapes.AddPicture(FileName=output_path, LinkToFile=False, SaveWithDocument=True)
                     # # 设置新插入图片的宽度和高度
-                    scaleNum=original_height/new_shape.Height
+                    scaleNum1=original_height/new_shape.Height
+                    scaleNum2=original_width/new_shape.Width
+                    scaleNum=min(scaleNum1,scaleNum2)
                     new_shape.Width = new_shape.Width*scaleNum
-                    new_shape.Height = original_height
+                    new_shape.Height = new_shape.Height*scaleNum
                     progress_value=int(jTiff/pageNum*90)
                     self.progress.emit(progress_value)
         # 保存并关闭文档
@@ -226,9 +230,13 @@ class WordConversionWorker(QtCore.QThread):
         splitted_name = os.path.splitext(os.path.basename(word_file))
         no_suffix_name = splitted_name[0]
         if splitted_name[1]=='.docx':
-            doc.SaveAs(currentPath+'\\'+no_suffix_name+'(tif).docx',FileFormat=12)  # 替换为修改后的 Word 文件路径
+            savePath=currentPath+'\\'+no_suffix_name+'(tif).docx'
+            savePath=os.path.abspath(os.path.normpath(savePath))#解决中文路径报错问题
+            doc.SaveAs(savePath,FileFormat=12)  # 替换为修改后的 Word 文件路径
         else:
-            doc.SaveAs(currentPath+'\\'+no_suffix_name+'(tif).doc',FileFormat=0)  # 替换为修改后的 Word 文件路径
+            savePath=currentPath+'\\'+no_suffix_name+'(tif).doc'
+            savePath=os.path.abspath(os.path.normpath(savePath))#解决中文路径报错问题
+            doc.SaveAs(savePath,FileFormat=0)  # 替换为修改后的 Word 文件路径
         doc.Close()
         word_app.Quit()
         visio_app.Quit()
